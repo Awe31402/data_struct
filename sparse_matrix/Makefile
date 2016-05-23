@@ -4,6 +4,9 @@ HEADERS = base.h sparse.h
 OPTIONS = -Wall -fms-extensions
 
 all: $(SRC) $(HEADERS)
-	gcc -g *.c -o main
+	gcc -pg *.c -o main  $(OPTIONS)
+gprof:
+	./main
+	gprof -b ./main
 clean:
-	rm main
+	rm main *.out

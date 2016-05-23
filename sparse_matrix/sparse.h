@@ -30,6 +30,7 @@ struct _IMatrix {
 	int  (*set_element) (sparse_matrix* m, const int row, const int col, const int value);
 	void (*print) (sparse_matrix* m);
 	int  (*get_element) (sparse_matrix*, const int row, const int col, int* ret);
+	void (*clear) (sparse_matrix *m);
 };
 
 sparse_matrix *sparse_matrix_constructor(void *, int row, int col);

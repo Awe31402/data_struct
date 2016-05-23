@@ -2,15 +2,81 @@
 #include <stdlib.h>
 #include <string.h>
 #include "sparse.h"
-
+#include "base.h"
 #define SUCCESS 1
 #define FAILED  0
 
+#define IS_EQUAL 0
+#define IS_SMALL -1
+#define IS_LARGE 1
+
+static int comp_row(sparse_term a, sparse_term b) {
+	int ret = a.row - b.row;
+	if (!ret)
+		return IS_EQUAL;
+	else
+		return (ret > 0) ? IS_LARGE : IS_SMALL;
+}
+
+static int comp_col(sparse_term a, sparse_term b) {
+	int ret = a.col - b.col;
+	if (!ret)
+		return IS_EQUAL;
+	else
+		return (ret > 0) ? IS_LARGE : IS_SMALL;
+}
+
 static int sparse_add_impl (sparse_matrix* i1, sparse_matrix* i2,
+		sparse_matrix *o1)
+{
+	int index1 = 0, index2 = 0;
+
+	if ((i1->row != i2->row) || (i1->col != i2->col))
+		return FAILED;
+
+	o1->row = i1->row;
+	o1->col = i1->col;
+	o1->terms_num = 0;
+
+	while((index1 < i1->terms_num) && (index2 < i2->terms_num)) {
+		switch(comp_row(i1->data[index1], i2->data[index2])) {
+		case IS_SMALL:
+			o1->data[o1->terms_num++] = i1->data[index1++];
+			break;
+		case IS_LARGE:
+			o1->data[o1->terms_num++] = i2->data[index2++];
+			break;
+		case IS_EQUAL:
+			switch (comp_col(i1->data[index1], i2->data[index2])) {
+			case IS_SMALL:
+				o1->data[o1->terms_num++] = i1->data[index1++];
+				break;
+			case IS_LARGE:
+				o1->data[o1->terms_num++] = i2->data[index2++];
+				break;
+			case IS_EQUAL:
+				o1->data[o1->terms_num] = i2->data[index2++];
+				o1->data[o1->terms_num++].value += i1->data[index1++].value;
+				break;
+			}
+			break;
+		}
+	};
+
+	while (index1 < i1->terms_num)
+		o1->data[o1->terms_num++] = i1->data[index1++];
+	while (index2 < i2->terms_num)
+		o1->data[o1->terms_num++] = i2->data[index2++];
+	return SUCCESS;
+}
+
+static inline int sparse_multiply_impl (sparse_matrix* i1, sparse_matrix* i2,
 		sparse_matrix *o1);
 
-static int sparse_multiply_impl (sparse_matrix* i1, sparse_matrix* i2,
-		sparse_matrix *o1);
+static void clear_impl(sparse_matrix *m)
+{
+	m->row = m->col = m->terms_num = 0;
+}
 
 static inline void swap_term(sparse_term *a, sparse_term *b)
 {
@@ -40,9 +106,9 @@ static int sparse_set_element_impl(sparse_matrix* m, const int r, const int c,
 		const int v)
 {
 	int i;
-	sparse_term swap, tmp;
+	sparse_term swap;
 
-	if ((r <= 0) || c  <= 0 || v == 0) return FAILED;
+	if ((r <= 0 || c  <= 0 || v == 0)) return FAILED;
 
 	if ((r > m->row) || (c > m->col) ||
 			(m->terms_num == MAX_TERMS))
@@ -94,11 +160,11 @@ static int sparse_transpose_impl(sparse_matrix* i, sparse_matrix* o) {
 	return SUCCESS;
 }
 
-void q_sort(sparse_term a[], int low, int high) {
+static void q_sort(sparse_term a[], int low, int high) {
 	if(low >= high) return;
 
 	int i, l;
-	sparse_term tmp;
+
 	sparse_term pivot = a[low];
 	l = low;
 	for (i = l; i < high; i++) {
@@ -150,7 +216,8 @@ static IMatrix sparse_ops = {
 	.transpose = sparse_transpose_qs_impl,
 	.print = sparse_print_impl,
 	.set_element = sparse_set_element_impl,
-	.add = NULL,
+	.clear = clear_impl,
+	.add = sparse_add_impl,
 	.multiply = NULL,
 };
 
