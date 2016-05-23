@@ -31,7 +31,7 @@ static int sparse_add_impl (sparse_matrix* i1, sparse_matrix* i2,
 {
 	int index1 = 0, index2 = 0;
 
-	if ((i1->row != i2->row) || (i1->col != i2->col))
+	if (unlikely(i1->row != i2->row) || (i1->col != i2->col))
 		return FAILED;
 
 	o1->row = i1->row;
@@ -108,9 +108,9 @@ static int sparse_set_element_impl(sparse_matrix* m, const int r, const int c,
 	int i;
 	sparse_term swap;
 
-	if ((r <= 0 || c  <= 0 || v == 0)) return FAILED;
+	if (unlikely(r <= 0 || c  <= 0 || v == 0)) return FAILED;
 
-	if ((r > m->row) || (c > m->col) ||
+	if (unlikely(r > m->row) || (c > m->col) ||
 			(m->terms_num == MAX_TERMS))
 		return FAILED;
 
@@ -138,7 +138,7 @@ static int sparse_set_element_impl(sparse_matrix* m, const int r, const int c,
 static int sparse_transpose_impl(sparse_matrix* i, sparse_matrix* o) {
 	int index, jndex;
 	int current = 0;
-	if (!o) return FAILED;
+	if (unlikely(!o)) return FAILED;
 
 	o->row = i->col;
 	o->col = i->row;
@@ -200,7 +200,7 @@ static int sparse_transpose_qs_impl(sparse_matrix* i, sparse_matrix* o) {
 
 static int sparse_transpose_setele_impl(sparse_matrix* i, sparse_matrix* o) {
 	int index;
-	if (!o) return FAILED;
+	if (unlikely(!o)) return FAILED;
 	
 	o->row = i->col;
 	o->col = i->row;
@@ -223,7 +223,7 @@ static IMatrix sparse_ops = {
 
 sparse_matrix* sparse_matrix_constructor(void *addr, int r, int c)
 {
-	if (!addr) return NULL;
+	if (unlikely(!addr)) return NULL;
 	sparse_matrix* ret = (sparse_matrix*) addr;
 
 	ret->row = r;
