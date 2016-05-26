@@ -60,6 +60,15 @@ poly_item* poly_item_constructor(int c, int e)
 	return ret;
 }
 
+void poly_item_destructor(poly_item *ptr)
+{
+	list_node* node = ptr->node;
+	node->next->prev = node->prev;
+	node->prev->next = node->next;
+	delete(list_node, node);
+	free(ptr);
+}
+
 polynomial* polynomial_constructor()
 {
 	polynomial* ret = malloc(sizeof(polynomial));
@@ -75,6 +84,11 @@ polynomial* polynomial_constructor()
 
 void polynomial_destructor(polynomial* ptr)
 {
+	list_node* curr = ptr->list->root->next;
+	while (curr != ptr->list->root) {
+		curr = curr->next;
+		delete(poly_item, curr->prev->ops->get_data(curr->prev));
+	}
 	delete(list, ptr->list);
 	free(ptr);
 }
