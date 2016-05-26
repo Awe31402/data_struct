@@ -1,37 +1,68 @@
+#include "base.h"
 #include "list.h"
-#include <stdio.h>
+#include "list_node.h"
 
-static void setNext_impl(List *l, List *r);
-static void setPrev_impl(List *l, List *r);
+static int insert_impl(list *l, list_node *pos, list_node* node)
+{
+	if (unlikely(!l || !pos || !node))
+		return FAILED;
+	pos->next->ops->set_prev(pos->next, node);
+	pos->ops->set_next(pos, node);
+	l->size++;
+	return SUCCESS;
+}
 
-static IList list_ops = {
-	.setPrev = setPrev_impl,
-	.setNext = setNext_impl,
+static int clear_impl(list *l)
+{
+	if (unlikely(!l))
+		return FAILED;
+
+	list_node* curr = l->root->next;
+
+	while(curr != l->root) {
+		curr = curr->next;
+		delete(list_node, curr->prev);
+	}
+
+	l->root->prev = l->root->next = l->tail = l->root;
+	l->size = 0;
+	return SUCCESS;
+}
+
+static int append_impl(list* l, list_node *node)
+{
+	if(unlikely(!l || !node))
+		return FAILED;
+	l->tail->ops->set_next(l->tail, node);
+	l->tail = node;
+	l->root->ops->set_prev(l->root, node);
+	l->size++;
+	return SUCCESS;
+}
+
+static ilist list_ops = {
+	.clear = clear_impl,
+	.append = append_impl,
+	.insert = insert_impl,
 };
 
-List* List_constructor(void* addr) 
+list* list_constructor()
 {
-	printf("going to construct list node..\n");
-	if (!addr) return NULL;
-	List *ret = addr;
-	ret->prev = ret->next = ret;
+	void *addr = malloc(sizeof(list));
+
+	if (unlikely(!addr))
+		return NULL;
+	list* ret = (list*) addr;
+	ret->root = ret->tail = new(list_node);
+	ret->size = 0;
 
 	ret->ops = &list_ops;
 	return ret;
 }
 
-void List_destructor(List *l)
+void list_destructor(list* ptr)
 {
-	printf("going to delete list node..\n");
-	free(l);
-}
-
-static void setPrev_impl(List *l, List *r)
-{
-	l->prev = r;
-}
-
-static void setNext_impl(List *l, List *r)
-{
-	l->next = r;
+	ptr->ops->clear(ptr);
+	delete(list_node, ptr->root);
+	free(ptr);
 }

@@ -1,29 +1,28 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include <stdlib.h>
-#include <stddef.h>
+#include "base.h"
+#include "list_node.h"
 
-typedef struct _list List;
+typedef struct _ilist ilist;
+typedef struct _list list;
 
-typedef struct _IList IList;
-
-struct _IList {
-	void (*setPrev) (List*, List*);
-	void (*setNext) (List*, List*);
-	void (*addTail) (List*, List*);
+struct _ilist {
+	int (*append) (list*, list_node*);
+	int (*clear) (list*);
+	int (*insert) (list*, list_node*, list_node*);
 };
 
 struct _list {
-	List *next;
-	List *prev;
+	int size;
+	list_node *root;
+	list_node *tail;
 	
-	IList *ops;
+	ilist *ops;
 };
 
+list* list_constructor();
 
-List* List_constructor(void* addr);
-
-void List_destructor(List *l);
+void list_destructor(list* ptr);
 
 #endif

@@ -1,5 +1,6 @@
-SRC := main.c base.h list.h
+SRC := main.c base.h list_node.h
 OPTIONS = -Wall -fms-extensions
+
 all: $(SRC)
 	gcc *.c -o main $(OPTIONS)
 clean:
