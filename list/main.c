@@ -3,42 +3,89 @@
 #include "list_node.h"
 #include <stdio.h>
 
+typedef struct _poly_item poly_item;
+typedef struct _iplynomial ipolynomial;
+typedef struct _polynomial polynomial;
+
+struct _poly_item {
+	int coef;
+	int expo;
+	list_node *node;
+};
+
+struct _iplynomial {
+	int (*add_item) (polynomial*, poly_item* i);
+	void (*print) (polynomial*);
+};
+
+struct _polynomial {
+	int degree;
+	list *list;
+
+	ipolynomial *ops;
+};
+
+void print_impl(polynomial* p)
+{
+	list_node* curr = p->list->root->next;
+	poly_item* item;
+	while (curr != p->list->root) {
+		item = curr->ops->get_data(curr);
+		printf("coef: %d, expo: %d\n", item->coef, item->expo);
+		curr = curr->next;
+	}
+}
+
+int add_item_impl(polynomial* p, poly_item* i)
+{
+	if (unlikely(!p))
+		return FAILED;
+	p->list->ops->append(p->list, i->node);
+	return SUCCESS;
+}
+
+ipolynomial poly_ops = {
+	.add_item = add_item_impl,
+	.print = print_impl,
+};
+
+poly_item* poly_item_constructor(int c, int e)
+{
+	poly_item* ret = malloc(sizeof(poly_item));
+	if (unlikely(!ret))
+		return NULL;
+	ret->coef = c;
+	ret->expo = e;
+	ret->node = new (list_node, ret);
+	return ret;
+}
+
+polynomial* polynomial_constructor()
+{
+	polynomial* ret = malloc(sizeof(polynomial));
+	
+	if (unlikely(!ret))
+		return NULL;
+	
+	ret->degree = 0;
+	ret->list = new (list);
+	ret->ops = &poly_ops;
+	return ret;
+}
+
+void polynomial_destructor(polynomial* ptr)
+{
+	delete(list, ptr->list);
+	free(ptr);
+}
+
 int main()
 {
-	int i = 0;
-	list* l = new(list);
-	list_node *c;
-	list_node *s = new(list_node);
-	list_node *t = new(list_node);
-
-	l->ops->append(l ,s);
-	l->ops->append(l ,t);
-
-	s->ops->set_next(s,t);
-
-	printf("s = %p\n", s);
-	printf("t = %p\n", t);
-	printf("s->next = %p\n", s->next);
-	printf("t->prev = %p\n", t->prev);
-
-	while (i < 4) {
-		l->ops->append(l, new(list_node));
-		printf("append: %p, size = %d\n",
-				l->tail, l->size);
-		i++;
-	}
-
-	l->ops->insert(l, t, new(list_node));
-
-	printf("--list size %d --\n", l->size);
-	c = l->root->next;
-	while (c != l->root) {
-		printf("%p\n", c);
-		c = c->next;
-	}
-
-	l->ops->clear(l);
-	printf("clear, size = %d\n", l->size);
-	delete(list, l);
+	polynomial* poly = new (polynomial);
+	poly->ops->add_item(poly, new(poly_item, 3, 5));
+	poly->ops->add_item(poly, new(poly_item, 2, 4));
+	poly->ops->add_item(poly, new(poly_item, 1, 7));
+	poly->ops->print(poly);
+	delete(polynomial, poly);
 	return 0;
 }

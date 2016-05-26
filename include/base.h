@@ -1,7 +1,7 @@
 #ifndef BASE_H
 #define BASE_H
 #include <stdlib.h>
-
+#include <stddef.h>
 #define SUCCESS 1
 #define FAILED  0
 
@@ -10,7 +10,7 @@
 
 #define container_of(ptr, type, member) \
 	({									\
-		const typeof(((type *) 0)-> member)  *_mptr = (ptr); \
+		const typeof(((type *) 0)-> member) *_mptr = (ptr); \
 		(type *)((char*) _mptr - offsetof(type, member));  \
 	})
 
