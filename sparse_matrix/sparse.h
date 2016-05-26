@@ -33,6 +33,6 @@ struct _IMatrix {
 	void (*clear) (sparse_matrix *m);
 };
 
-sparse_matrix *sparse_matrix_constructor(void *, int row, int col);
+sparse_matrix *sparse_matrix_constructor(int row, int col);
 void sparse_matrix_destructor(sparse_matrix *ptr);
 #endif

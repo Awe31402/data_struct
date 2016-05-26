@@ -70,8 +70,8 @@ static int sparse_add_impl (sparse_matrix* i1, sparse_matrix* i2,
 	return SUCCESS;
 }
 
-static inline int sparse_multiply_impl (sparse_matrix* i1, sparse_matrix* i2,
-		sparse_matrix *o1);
+//static inline int sparse_multiply_impl (sparse_matrix* i1, sparse_matrix* i2,
+//		sparse_matrix *o1);
 
 static void clear_impl(sparse_matrix *m)
 {
@@ -221,8 +221,9 @@ static IMatrix sparse_ops = {
 	.multiply = NULL,
 };
 
-sparse_matrix* sparse_matrix_constructor(void *addr, int r, int c)
+sparse_matrix* sparse_matrix_constructor(int r, int c)
 {
+	void *addr = malloc(sizeof(sparse_matrix));
 	if (unlikely(!addr)) return NULL;
 	sparse_matrix* ret = (sparse_matrix*) addr;
 
