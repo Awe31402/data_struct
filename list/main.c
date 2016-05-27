@@ -7,6 +7,8 @@ typedef struct _poly_item poly_item;
 typedef struct _iplynomial ipolynomial;
 typedef struct _polynomial polynomial;
 
+void poly_item_destructor(poly_item *ptr);
+
 struct _poly_item {
 	int coef;
 	int expo;
@@ -16,10 +18,10 @@ struct _poly_item {
 struct _iplynomial {
 	int (*add_item) (polynomial*, poly_item* i);
 	void (*print) (polynomial*);
+	int (*get_degree)(polynomial*);
 };
 
 struct _polynomial {
-	int degree;
 	list *list;
 
 	ipolynomial *ops;
@@ -31,17 +33,40 @@ void print_impl(polynomial* p)
 	poly_item* item;
 	while (curr != p->list->root) {
 		item = curr->ops->get_data(curr);
-		printf("coef: %d, expo: %d\n", item->coef, item->expo);
+		printf("(%d)x^%d +",item->coef, item->expo);
 		curr = curr->next;
 	}
+	printf("\n");
 }
+
 
 int add_item_impl(polynomial* p, poly_item* i)
 {
-	if (unlikely(!p))
+	list_node *curr;
+	poly_item* data;
+
+	if (unlikely(!p || !i))
 		return FAILED;
-	p->list->ops->append(p->list, i->node);
-	return SUCCESS;
+
+	if (p->list->size == 0) {
+		p->list->ops->append(p->list, i->node);
+	} else {
+		curr = p->list->ops->get_head(p->list);
+		for (; curr != p->list->root; curr = curr->next) {
+			data = curr->ops->get_data(curr);
+			if (data->expo < i->expo) {
+				p->list->ops->insert(p->list, curr, i->node);
+				return SUCCESS;
+			} else if (data->expo == i->expo) {
+				data->coef = i->coef;
+				delete(poly_item, i);
+				return SUCCESS;
+			}
+		}
+		p->list->ops->append(p->list, i->node);
+		return SUCCESS;
+	}
+	return FAILED;
 }
 
 ipolynomial poly_ops = {
@@ -51,6 +76,8 @@ ipolynomial poly_ops = {
 
 poly_item* poly_item_constructor(int c, int e)
 {
+	if (unlikely(e < 0))
+		return NULL;
 	poly_item* ret = malloc(sizeof(poly_item));
 	if (unlikely(!ret))
 		return NULL;
@@ -76,7 +103,6 @@ polynomial* polynomial_constructor()
 	if (unlikely(!ret))
 		return NULL;
 	
-	ret->degree = 0;
 	ret->list = new (list);
 	ret->ops = &poly_ops;
 	return ret;
@@ -103,6 +129,7 @@ int main()
 	poly->ops->add_item(poly, new(poly_item, 2, 4));
 	poly->ops->add_item(poly, new(poly_item, 1, 7));
 	poly->ops->add_item(poly, new(poly_item, 4, 8));
+	poly->ops->add_item(poly, new(poly_item, 9, -1));
 	poly->ops->print(poly);
 	delete(polynomial, poly);
 	return 0;

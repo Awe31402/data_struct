@@ -20,10 +20,10 @@ static int insert_impl(list *l, list_node *pos, list_node* node)
 {
 	if (unlikely(!l || !pos || !node))
 		return FAILED;
-	node->ops->set_next(node, pos->next);
-	node->ops->set_prev(node, pos);
-	pos->next->ops->set_prev(pos->next, node);
-	pos->ops->set_next(pos, node);
+	node->ops->set_next(node, pos);
+	node->ops->set_prev(node, pos->prev);
+	pos->prev->ops->set_next(pos->prev, node);
+	pos->ops->set_prev(pos, node);
 	l->size++;
 	return SUCCESS;
 }
