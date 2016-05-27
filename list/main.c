@@ -27,7 +27,7 @@ struct _polynomial {
 
 void print_impl(polynomial* p)
 {
-	list_node* curr = p->list->root->next;
+	list_node* curr = p->list->ops->get_head(p->list);
 	poly_item* item;
 	while (curr != p->list->root) {
 		item = curr->ops->get_data(curr);
@@ -84,10 +84,13 @@ polynomial* polynomial_constructor()
 
 void polynomial_destructor(polynomial* ptr)
 {
-	list_node* curr = ptr->list->root->next;
+	list_node* curr = ptr->list->ops->get_head(ptr->list);
+	list_node* prev;
 	while (curr != ptr->list->root) {
 		curr = curr->next;
-		delete(poly_item, curr->prev->ops->get_data(curr->prev));
+		prev = curr->prev;
+		ptr->list->ops->remove(ptr->list, prev);
+		delete(poly_item, prev->ops->get_data(prev));
 	}
 	delete(list, ptr->list);
 	free(ptr);
@@ -99,6 +102,7 @@ int main()
 	poly->ops->add_item(poly, new(poly_item, 3, 5));
 	poly->ops->add_item(poly, new(poly_item, 2, 4));
 	poly->ops->add_item(poly, new(poly_item, 1, 7));
+	poly->ops->add_item(poly, new(poly_item, 4, 8));
 	poly->ops->print(poly);
 	delete(polynomial, poly);
 	return 0;
