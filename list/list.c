@@ -20,10 +20,13 @@ static int insert_impl(list *l, list_node *pos, list_node* node)
 {
 	if (unlikely(!l || !pos || !node))
 		return FAILED;
-	node->ops->set_next(node, pos);
-	node->ops->set_prev(node, pos->prev);
-	pos->prev->ops->set_next(pos->prev, node);
-	pos->ops->set_prev(pos, node);
+
+	ilist_node *node_interface = node->ops;
+
+	node_interface->set_next(node, pos);
+	node_interface->set_prev(node, pos->prev);
+	node_interface->set_next(pos->prev, node);
+	node_interface->set_prev(pos, node);
 	l->size++;
 	return SUCCESS;
 }
@@ -50,12 +53,13 @@ static int append_impl(list* l, list_node *node)
 	if(unlikely(!l || !node))
 		return FAILED;
 	list_node *tail = l->root->prev;
+	ilist_node *node_interface = tail->ops;
 
-	node->ops->set_prev(node, tail);
-	node->ops->set_next(node, l->root);
+	node_interface->set_prev(node, tail);
+	node_interface->set_next(node, l->root);
 
-	tail->ops->set_next(tail, node);
-	l->root->ops->set_prev(l->root, node);
+	node_interface->set_next(tail, node);
+	node_interface->set_prev(l->root, node);
 	l->size++;
 	return SUCCESS;
 }
@@ -64,9 +68,11 @@ static int remove_impl(list *l, list_node *node)
 {
 	if (unlikely(!l || !node || !l->size))
 		return FAILED;
-	node->prev->ops->set_next(node->prev, node->next);
-	node->next->ops->set_prev(node->next, node->prev);
-	if (node->ops->get_data(node) == NULL)
+
+	ilist_node *node_interface = node->ops;
+	node_interface->set_next(node->prev, node->next);
+	node_interface->set_prev(node->next, node->prev);
+	if (node_interface->get_data(node) == NULL)
 		delete(list_node, node);
 	l->size--;
 	return SUCCESS;

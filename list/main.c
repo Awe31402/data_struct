@@ -16,7 +16,7 @@ struct _poly_item {
 };
 
 struct _iplynomial {
-	int (*add_item) (polynomial*, poly_item* i);
+	int (*set_item) (polynomial*, poly_item* i);
 	void (*print) (polynomial*);
 	int (*get_degree)(polynomial*);
 };
@@ -29,18 +29,28 @@ struct _polynomial {
 
 void print_impl(polynomial* p)
 {
+	if (unlikely(!p))
+		return;
+	printf("f(x) = ");
+
+	if (p->list->size == 0) {
+		printf("none\n");
+		return;
+	}
+
 	list_node* curr = p->list->ops->get_head(p->list);
 	poly_item* item;
 	while (curr != p->list->root) {
 		item = curr->ops->get_data(curr);
-		printf("(%d)x^%d +",item->coef, item->expo);
+		printf("(%d)x^%d %c",item->coef, item->expo,
+				(curr->next == p->list->root) ? '\0':'+');
 		curr = curr->next;
 	}
 	printf("\n");
 }
 
 
-int add_item_impl(polynomial* p, poly_item* i)
+int set_item_impl(polynomial* p, poly_item* i)
 {
 	list_node *curr;
 	poly_item* data;
@@ -48,14 +58,17 @@ int add_item_impl(polynomial* p, poly_item* i)
 	if (unlikely(!p || !i))
 		return FAILED;
 
+	ilist* list_interface = p->list->ops;
+	ilist_node* node_interface = i->node->ops;
+
 	if (p->list->size == 0) {
-		p->list->ops->append(p->list, i->node);
+		list_interface->append(p->list, i->node);
 	} else {
-		curr = p->list->ops->get_head(p->list);
+		curr = list_interface->get_head(p->list);
 		for (; curr != p->list->root; curr = curr->next) {
-			data = curr->ops->get_data(curr);
+			data = node_interface->get_data(curr);
 			if (data->expo < i->expo) {
-				p->list->ops->insert(p->list, curr, i->node);
+				list_interface->insert(p->list, curr, i->node);
 				return SUCCESS;
 			} else if (data->expo == i->expo) {
 				data->coef = i->coef;
@@ -63,20 +76,20 @@ int add_item_impl(polynomial* p, poly_item* i)
 				return SUCCESS;
 			}
 		}
-		p->list->ops->append(p->list, i->node);
+		list_interface->append(p->list, i->node);
 		return SUCCESS;
 	}
 	return FAILED;
 }
 
 ipolynomial poly_ops = {
-	.add_item = add_item_impl,
+	.set_item = set_item_impl,
 	.print = print_impl,
 };
 
 poly_item* poly_item_constructor(int c, int e)
 {
-	if (unlikely(e < 0))
+	if (unlikely(e < 0 || !c))
 		return NULL;
 	poly_item* ret = malloc(sizeof(poly_item));
 	if (unlikely(!ret))
@@ -90,8 +103,8 @@ poly_item* poly_item_constructor(int c, int e)
 void poly_item_destructor(poly_item *ptr)
 {
 	list_node* node = ptr->node;
-	node->next->prev = node->prev;
-	node->prev->next = node->next;
+	node->next = node;
+	node->prev = node;
 	delete(list_node, node);
 	free(ptr);
 }
@@ -110,6 +123,9 @@ polynomial* polynomial_constructor()
 
 void polynomial_destructor(polynomial* ptr)
 {
+	if (unlikely(!ptr))
+		return;
+
 	list_node* curr = ptr->list->ops->get_head(ptr->list);
 	list_node* prev;
 	while (curr != ptr->list->root) {
@@ -125,12 +141,19 @@ void polynomial_destructor(polynomial* ptr)
 int main()
 {
 	polynomial* poly = new (polynomial);
-	poly->ops->add_item(poly, new(poly_item, 3, 5));
-	poly->ops->add_item(poly, new(poly_item, 2, 4));
-	poly->ops->add_item(poly, new(poly_item, 1, 7));
-	poly->ops->add_item(poly, new(poly_item, 4, 8));
-	poly->ops->add_item(poly, new(poly_item, 9, -1));
-	poly->ops->print(poly);
+	if (unlikely(!poly)) {
+		printf("system out of memory\n");
+		return 0;
+	}
+	ipolynomial *poly_interface = poly->ops;
+
+	poly_interface->print(poly);
+	poly_interface->set_item(poly, new(poly_item, 3, 5));
+	poly_interface->set_item(poly, new(poly_item, 2, 4));
+	poly_interface->set_item(poly, new(poly_item, 1, 7));
+	poly_interface->set_item(poly, new(poly_item, -4, 8));
+	poly_interface->set_item(poly, new(poly_item, 9, -1));
+	poly_interface->print(poly);
 	delete(polynomial, poly);
 	return 0;
 }
