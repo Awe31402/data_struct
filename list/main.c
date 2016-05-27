@@ -2,7 +2,11 @@
 #include "list.h"
 #include "list_node.h"
 #include <stdio.h>
-
+/*
+ * This is an example to show how to use
+ * list & list_node classes and it's related
+ * interface by a polynomial example
+ */
 typedef struct _poly_item poly_item;
 typedef struct _iplynomial ipolynomial;
 typedef struct _polynomial polynomial;
@@ -26,6 +30,18 @@ struct _polynomial {
 
 	ipolynomial *ops;
 };
+
+int get_degree_impl(polynomial *p)
+{
+	if (p->list->size == 0)
+		return -1;
+
+	ilist *list_interface = p->list->ops;
+	ilist_node *node_interface = p->list->root->ops;
+
+	poly_item *data = node_interface->get_data(list_interface->get_head(p->list));
+	return data->expo;
+}
 
 void print_impl(polynomial* p)
 {
@@ -85,6 +101,7 @@ int set_item_impl(polynomial* p, poly_item* i)
 ipolynomial poly_ops = {
 	.set_item = set_item_impl,
 	.print = print_impl,
+	.get_degree = get_degree_impl,
 };
 
 poly_item* poly_item_constructor(int c, int e)
@@ -145,15 +162,18 @@ int main()
 		printf("system out of memory\n");
 		return 0;
 	}
-	ipolynomial *poly_interface = poly->ops;
 
+	ipolynomial *poly_interface = poly->ops;
 	poly_interface->print(poly);
+	printf("deg(f(x)) = %d\n", poly_interface->get_degree(poly));
 	poly_interface->set_item(poly, new(poly_item, 3, 5));
 	poly_interface->set_item(poly, new(poly_item, 2, 4));
 	poly_interface->set_item(poly, new(poly_item, 1, 7));
 	poly_interface->set_item(poly, new(poly_item, -4, 8));
 	poly_interface->set_item(poly, new(poly_item, 9, -1));
+	poly_interface->set_item(poly, new(poly_item, 8, 9));
 	poly_interface->print(poly);
+	printf("deg(f(x)) = %d\n", poly_interface->get_degree(poly));
 	delete(polynomial, poly);
 	return 0;
 }
