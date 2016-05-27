@@ -104,6 +104,28 @@ ipolynomial poly_ops = {
 	.get_degree = get_degree_impl,
 };
 
+static int polynomial_clear_impl(list* l)
+{
+	if (unlikely(!l))
+		return FAILED;
+
+	if (l->size == 0)
+		goto done;
+
+	ilist *list_interface = l->ops;
+
+	list_node* curr = list_interface->get_head(l);
+	list_node* prev;
+	while (curr != l->root) {
+		prev = curr;
+		curr = curr->next;
+		list_interface->remove(l, prev);
+		delete(poly_item, prev->ops->get_data(prev));
+	}
+done:
+	return SUCCESS;
+}
+
 poly_item* poly_item_constructor(int c, int e)
 {
 	if (unlikely(e < 0 || !c))
@@ -134,6 +156,9 @@ polynomial* polynomial_constructor()
 		return NULL;
 	
 	ret->list = new (list);
+	ilist *list_interface = ret->list->ops;
+	list_interface->clear = polynomial_clear_impl;
+
 	ret->ops = &poly_ops;
 	return ret;
 }
@@ -143,14 +168,9 @@ void polynomial_destructor(polynomial* ptr)
 	if (unlikely(!ptr))
 		return;
 
-	list_node* curr = ptr->list->ops->get_head(ptr->list);
-	list_node* prev;
-	while (curr != ptr->list->root) {
-		curr = curr->next;
-		prev = curr->prev;
-		ptr->list->ops->remove(ptr->list, prev);
-		delete(poly_item, prev->ops->get_data(prev));
-	}
+	ilist *list_interface = ptr->list->ops;
+	list_interface->clear(ptr->list);
+
 	delete(list, ptr->list);
 	free(ptr);
 }
