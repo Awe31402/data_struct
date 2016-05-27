@@ -66,7 +66,8 @@ static int remove_impl(list *l, list_node *node)
 		return FAILED;
 	node->prev->ops->set_next(node->prev, node->next);
 	node->next->ops->set_prev(node->next, node->prev);
-	delete(list_node, node);
+	if (node->ops->get_data(node) == NULL)
+		delete(list_node, node);
 	l->size--;
 	return SUCCESS;
 }
