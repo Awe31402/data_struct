@@ -2,6 +2,7 @@
 #include "list.h"
 #include "list_node.h"
 #include <stdio.h>
+#include <string.h>
 /*
  * This is an example to show how to use
  * list & list_node classes and it's related
@@ -40,7 +41,7 @@ int get_degree_impl(polynomial *p)
 	ilist_node *node_interface = p->list->root->ops;
 
 	poly_item *data = node_interface->get_data(list_interface->get_head(p->list));
-	return data->expo;
+	return (data)? data->expo : -1;
 }
 
 void print_impl(polynomial* p)
@@ -148,6 +149,19 @@ void poly_item_destructor(poly_item *ptr)
 	free(ptr);
 }
 
+static ilist poly_list_ops;
+
+static ilist* copy_list_interface(ilist *ops)
+{
+	static int done = 0;
+	ilist *ret = &poly_list_ops;
+	if (unlikely(done == 0)) {
+		*ret = *ops;
+		done = 1;
+	}
+	return ret;
+}
+
 polynomial* polynomial_constructor()
 {
 	polynomial* ret = malloc(sizeof(polynomial));
@@ -156,7 +170,8 @@ polynomial* polynomial_constructor()
 		return NULL;
 	
 	ret->list = new (list);
-	ilist *list_interface = ret->list->ops;
+	ilist *list_interface = ret->list->ops
+		= copy_list_interface(ret->list->ops);
 	list_interface->clear = polynomial_clear_impl;
 
 	ret->ops = &poly_ops;
@@ -178,6 +193,7 @@ void polynomial_destructor(polynomial* ptr)
 int main()
 {
 	polynomial* poly = new (polynomial);
+	polynomial* poly2 = new (polynomial);
 	if (unlikely(!poly)) {
 		printf("system out of memory\n");
 		return 0;
@@ -189,11 +205,12 @@ int main()
 	poly_interface->set_item(poly, new(poly_item, 3, 5));
 	poly_interface->set_item(poly, new(poly_item, 2, 4));
 	poly_interface->set_item(poly, new(poly_item, 1, 7));
-	poly_interface->set_item(poly, new(poly_item, -4, 8));
+	poly_interface->set_item(poly, new(poly_item, -4, 4));
 	poly_interface->set_item(poly, new(poly_item, 9, -1));
 	poly_interface->set_item(poly, new(poly_item, 8, 9));
 	poly_interface->print(poly);
 	printf("deg(f(x)) = %d\n", poly_interface->get_degree(poly));
 	delete(polynomial, poly);
+	delete(polynomial, poly2);
 	return 0;
 }
