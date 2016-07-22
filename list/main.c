@@ -3,6 +3,8 @@
 #include "list_node.h"
 #include <stdio.h>
 #include <string.h>
+#include <obj.h>
+
 /*
  * This is an example to show how to use
  * list & list_node classes and it's related
@@ -11,8 +13,6 @@
 typedef struct _poly_item poly_item;
 typedef struct _iplynomial ipolynomial;
 typedef struct _polynomial polynomial;
-
-void poly_item_destructor(poly_item *ptr);
 
 struct _poly_item {
 	int coef;
@@ -78,6 +78,9 @@ int set_item_impl(polynomial* p, poly_item* i)
 	ilist* list_interface = p->list->ops;
 	ilist_node* node_interface = i->node->ops;
 
+	printf("set_item_impl: coef= %d, expo = %d\n",
+			i->coef, i->expo);
+
 	if (p->list->size == 0) {
 		list_interface->append(p->list, i->node);
 	} else {
@@ -89,7 +92,7 @@ int set_item_impl(polynomial* p, poly_item* i)
 				return SUCCESS;
 			} else if (data->expo == i->expo) {
 				data->coef = i->coef;
-				delete(poly_item, i);
+				delete(i);
 				return SUCCESS;
 			}
 		}
@@ -121,32 +124,39 @@ static int polynomial_clear_impl(list* l)
 		prev = curr;
 		curr = curr->next;
 		list_interface->remove(l, prev);
-		delete(poly_item, prev->ops->get_data(prev));
+		delete(prev->ops->get_data(prev));
 	}
 done:
 	return SUCCESS;
 }
 
+void poly_item_destructor(void *ptr);
+
 poly_item* poly_item_constructor(int c, int e)
 {
 	if (unlikely(e < 0 || !c))
 		return NULL;
-	poly_item* ret = malloc(sizeof(poly_item));
-	if (unlikely(!ret))
+
+	Obj* addr = malloc(sizeof(poly_item) + sizeof(Obj));
+	if (unlikely(!addr))
 		return NULL;
+
+	addr->ref_count = 1;
+	addr->destructor = poly_item_destructor;
+
+	poly_item* ret = (poly_item*)((char*)addr + sizeof(Obj));
 	ret->coef = c;
 	ret->expo = e;
 	ret->node = new (list_node, ret);
 	return ret;
 }
 
-void poly_item_destructor(poly_item *ptr)
+void poly_item_destructor(void *ptr)
 {
-	list_node* node = ptr->node;
+	list_node* node = ((poly_item*) ptr)->node;
 	node->next = node;
 	node->prev = node;
-	delete(list_node, node);
-	free(ptr);
+	delete(node);
 }
 
 static ilist poly_list_ops;
@@ -162,13 +172,18 @@ static ilist* copy_list_interface(ilist *ops)
 	return ret;
 }
 
+void polynomial_destructor(void* ptr);
+
 polynomial* polynomial_constructor()
 {
-	polynomial* ret = malloc(sizeof(polynomial));
+	Obj* obj = malloc(sizeof(polynomial) + sizeof(Obj));
 	
-	if (unlikely(!ret))
+	if (unlikely(!obj))
 		return NULL;
+	obj->ref_count = 1;
+	obj->destructor = polynomial_destructor;
 	
+	polynomial* ret = (polynomial*)((char*) obj + sizeof(Obj));
 	ret->list = new (list);
 	ilist *list_interface = ret->list->ops
 		= copy_list_interface(ret->list->ops);
@@ -178,16 +193,18 @@ polynomial* polynomial_constructor()
 	return ret;
 }
 
-void polynomial_destructor(polynomial* ptr)
+void polynomial_destructor(void* p)
 {
-	if (unlikely(!ptr))
+	if (unlikely(!p))
 		return;
 
+	polynomial* ptr = p;
+
+	printf("polynomial_destructor: %p\n", p);
 	ilist *list_interface = ptr->list->ops;
 	list_interface->clear(ptr->list);
 
-	delete(list, ptr->list);
-	free(ptr);
+	delete(ptr->list);
 }
 
 int main()
@@ -210,7 +227,7 @@ int main()
 	poly_interface->set_item(poly, new(poly_item, 8, 9));
 	poly_interface->print(poly);
 	printf("deg(f(x)) = %d\n", poly_interface->get_degree(poly));
-	delete(polynomial, poly);
-	delete(polynomial, poly2);
+	delete(poly);
+	delete(poly2);
 	return 0;
 }

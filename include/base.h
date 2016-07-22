@@ -16,9 +16,4 @@
 
 #define new(TYPE, args...) TYPE ## _constructor(args)
 
-#define delete(TYPE, ptr)			\
-	do {							\
-		TYPE ## _destructor(ptr);	\
-	} while(0)
-
 #endif

@@ -1,6 +1,7 @@
 #include "base.h"
 #include "list.h"
 #include "list_node.h"
+#include <obj.h>
 
 static list_node* get_head_impl(list* l)
 {
@@ -40,7 +41,7 @@ static int clear_impl(list *l)
 
 	while(curr != l->root) {
 		curr = curr->next;
-		delete(list_node, curr->prev);
+		delete(curr->prev);
 	}
 
 	l->root->prev = l->root->next = l->root;
@@ -73,7 +74,7 @@ static int remove_impl(list *l, list_node *node)
 	node_interface->set_next(node->prev, node->next);
 	node_interface->set_prev(node->next, node->prev);
 	if (node_interface->get_data(node) == NULL)
-		delete(list_node, node);
+		delete(node);
 	l->size--;
 	return SUCCESS;
 }
@@ -87,13 +88,19 @@ static ilist list_ops = {
 	.remove =   remove_impl,
 };
 
+void list_destructor(void*);
+
 list* list_constructor()
 {
-	void *addr = malloc(sizeof(list));
+	Obj *addr = malloc(sizeof(list) + sizeof(Obj));
 
 	if (unlikely(!addr))
 		return NULL;
-	list* ret = (list*) addr;
+
+	addr->ref_count = 1;
+	addr->destructor = list_destructor;
+
+	list* ret = (list*) ((char*)addr + sizeof(Obj));
 	ret->root = new(list_node, NULL);
 	ret->size = 0;
 
@@ -101,9 +108,9 @@ list* list_constructor()
 	return ret;
 }
 
-void list_destructor(list* ptr)
+void list_destructor(void* p)
 {
+	list* ptr = (list*) p;
 	ptr->ops->clear(ptr);
-	delete(list_node, ptr->root);
-	free(ptr);
+	delete(ptr->root);
 }

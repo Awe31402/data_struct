@@ -16,6 +16,6 @@ struct _list_node {
 
 list_node* list_node_constructor(void*);
 
-void list_node_destructor(list_node* ptr);
+void list_node_destructor(void* ptr);
 
 #endif
