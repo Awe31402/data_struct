@@ -46,7 +46,7 @@ list_node* list_node_constructor(void *data)
 	Obj *addr = malloc(sizeof(list_node) + sizeof(Obj));
 	if (unlikely(!addr))
 		return NULL;
-	
+
 	addr->ref_count = 1;
 	addr->destructor = list_node_destructor;
 

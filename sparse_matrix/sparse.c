@@ -143,7 +143,7 @@ static int sparse_transpose_impl(sparse_matrix* i, sparse_matrix* o) {
 	o->row = i->col;
 	o->col = i->row;
 	o->terms_num = i->terms_num;
-	
+
 	/* if i has more than one non zero terms */
 	if (o->terms_num) {
 		for (index = 1; index <= i->col; index++) {
@@ -179,7 +179,7 @@ static void q_sort(sparse_term a[], int low, int high) {
 	q_sort(a, l+1, high);
 }
 
-static int sparse_transpose_qs_impl(sparse_matrix* i, sparse_matrix* o) {	
+static int sparse_transpose_qs_impl(sparse_matrix* i, sparse_matrix* o) {
 	int index, tmp;
 	if (!o) return FAILED;
 
@@ -201,7 +201,7 @@ static int sparse_transpose_qs_impl(sparse_matrix* i, sparse_matrix* o) {
 static int sparse_transpose_setele_impl(sparse_matrix* i, sparse_matrix* o) {
 	int index;
 	if (unlikely(!o)) return FAILED;
-	
+
 	o->row = i->col;
 	o->col = i->row;
 

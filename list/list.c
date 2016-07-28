@@ -90,6 +90,13 @@ static ilist list_ops = {
 
 void list_destructor(void*);
 
+#define INIT_LIST(listp) \
+  do { \
+    listp->root = new(list_node, NULL); \
+    listp->size = 0; \
+    listp->ops = &list_ops; \
+  } while(0)
+
 list* list_constructor()
 {
 	Obj *addr = malloc(sizeof(list) + sizeof(Obj));

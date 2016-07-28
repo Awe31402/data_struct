@@ -177,12 +177,12 @@ void polynomial_destructor(void* ptr);
 polynomial* polynomial_constructor()
 {
 	Obj* obj = malloc(sizeof(polynomial) + sizeof(Obj));
-	
+
 	if (unlikely(!obj))
 		return NULL;
 	obj->ref_count = 1;
 	obj->destructor = polynomial_destructor;
-	
+
 	polynomial* ret = (polynomial*)((char*) obj + sizeof(Obj));
 	ret->list = new (list);
 	ilist *list_interface = ret->list->ops

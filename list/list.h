@@ -11,7 +11,6 @@ typedef struct _list list;
 struct _list {
 	int size;
 	list_node *root;
-	
 	ilist *ops;
 };
 
